@@ -1,0 +1,21 @@
+{
+    "words": [
+        "filetree",
+        "ncdu",
+
+        "asize",
+        "dsize",
+
+        "infoblock",
+
+        "majorver",
+        "minorver",
+
+        "progname",
+        "progver",
+
+        "testdata",
+        "goldenfile",
+        "rstest"
+    ]
+}

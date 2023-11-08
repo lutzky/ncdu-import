@@ -1,0 +1,19 @@
+[
+  1,
+  2,
+  {
+    "progname": "ncdu-import",
+    "progver": "1.0",
+    "timestamp": 1699656086
+  },
+  [
+    {
+      "name": "ROOT",
+      "dsize": 0
+    },
+    {
+      "name": "f",
+      "dsize": 5
+    }
+  ]
+]
