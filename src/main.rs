@@ -1,6 +1,6 @@
-mod ncdu;
 mod filetree;
 mod import;
+mod ncdu;
 
 use clap::Parser;
 use std::path::PathBuf;
@@ -10,11 +10,18 @@ struct Cli {
     /// Input CSV file
     input: PathBuf,
 
+    /// This column should be read for file paths
     #[arg(long, default_value = "name")]
-    name_column: String,
+    path_column: String,
 
+    /// This column should be read for file sizes
     #[arg(long, default_value = "size")]
     size_column: String,
+
+    /// If true, instead of CSV format, the input is expected to be as outputted
+    /// from the `du -a -b` command.
+    #[arg(long, default_value = "false")]
+    is_du_output: bool,
 }
 
 use eyre::eyre;
@@ -27,8 +34,9 @@ fn main() -> Result<()> {
         cli.input
             .to_str()
             .ok_or(eyre!("invalid input path {:?}", cli.input))?,
-        &cli.name_column,
+        &cli.path_column,
         &cli.size_column,
+        cli.is_du_output,
     )?;
 
     let tree = filetree::Tree::from(input_csv);
@@ -43,8 +51,8 @@ fn main() -> Result<()> {
 mod tests {
     use super::*;
 
-    use std::io::Write;
     use goldenfile::Mint;
+    use std::io::Write;
 
     #[rstest::rstest]
     fn golden_test(#[files("testdata/*.csv")] input_file: PathBuf) {
@@ -56,7 +64,8 @@ mod tests {
             .new_goldenfile(want_output.file_name().unwrap())
             .unwrap();
 
-        let input_csv = import::read_csv(input_file.to_str().unwrap(), "name", "size").unwrap();
+        let input_csv =
+            import::read_csv(input_file.to_str().unwrap(), "name", "size", false).unwrap();
 
         let tree = filetree::Tree::from(input_csv);
         let export: ncdu::Export = tree.into();
