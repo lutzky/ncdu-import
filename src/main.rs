@@ -11,8 +11,11 @@ use std::{
 #[derive(Parser)]
 struct Cli {
     /// Input CSV file (- for standard input)
-    #[clap(default_value = "-")]
     input: String,
+
+    /// Output JSON file (- for standard output)
+    #[arg(short, long)]
+    output: String,
 
     /// This column should be read for file paths
     #[arg(long, default_value = "name")]
@@ -45,7 +48,12 @@ fn main() -> Result<()> {
     let tree = filetree::Tree::from(sized_file_vec);
     let export: ncdu::Export = tree.into();
     let json = serde_json::to_string_pretty(&export)?;
-    println!("{json}");
+
+    if cli.output == "-" {
+        println!("{json}");
+    } else {
+        std::fs::write(cli.output, json)?
+    }
 
     Ok(())
 }
