@@ -6,29 +6,31 @@ use eyre::{eyre, Result};
 /// `size_column` are actually read, and are used for the path and size of the file
 /// respectively.
 ///
+/// If path is "-", standard input is used.
+///
 /// If `is_du_output` is true, then the input is expected to be the output of
 /// the `du` command. In this case, `path_column` and `size_column` are ignored.
 pub fn read_csv(
-    path: &str,
+    input: impl std::io::Read,
     path_column: &str,
     size_column: &str,
     is_du_output: bool,
 ) -> Result<Vec<SizedFile>> {
+    let mut reader_builder = csv::ReaderBuilder::new();
+
     let mut reader = if is_du_output {
-        csv::ReaderBuilder::new()
-            .delimiter(b'\t')
-            .has_headers(false)
-            .from_path(path)?
+        reader_builder.delimiter(b'\t').has_headers(false)
     } else {
-        csv::Reader::from_path(path)?
-    };
+        reader_builder.has_headers(true)
+    }
+    .from_reader(input);
 
     let mut get_col_idx = |col: &str| -> Result<usize> {
         reader
             .headers()?
             .iter()
             .position(|f| f == col)
-            .ok_or_else(|| eyre!("column {col:?} missing in {path}"))
+            .ok_or_else(|| eyre!("column {col:?} missing"))
     };
 
     let (path_col_idx, size_col_idx) = if is_du_output {
@@ -45,11 +47,11 @@ pub fn read_csv(
             Ok(SizedFile {
                 path: record
                     .get(path_col_idx)
-                    .ok_or_else(|| eyre!("line {line} of {path} is missing columns"))?
+                    .ok_or_else(|| eyre!("line {line} is missing columns"))?
                     .to_owned(),
                 size: record
                     .get(size_col_idx)
-                    .ok_or_else(|| eyre!("line {line} of {path} is missing columns"))?
+                    .ok_or_else(|| eyre!("line {line} is missing columns"))?
                     .parse()?,
             })
         })

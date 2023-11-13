@@ -3,12 +3,16 @@ mod import;
 mod ncdu;
 
 use clap::Parser;
-use std::path::PathBuf;
+use std::{
+    fs::File,
+    io::{stdin, Read},
+};
 
 #[derive(Parser)]
 struct Cli {
-    /// Input CSV file
-    input: PathBuf,
+    /// Input CSV file (- for standard input)
+    #[clap(default_value = "-")]
+    input: String,
 
     /// This column should be read for file paths
     #[arg(long, default_value = "name")]
@@ -24,22 +28,21 @@ struct Cli {
     is_du_output: bool,
 }
 
-use eyre::eyre;
 use eyre::Result;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let input_csv = import::read_csv(
-        cli.input
-            .to_str()
-            .ok_or(eyre!("invalid input path {:?}", cli.input))?,
-        &cli.path_column,
-        &cli.size_column,
-        cli.is_du_output,
-    )?;
+    let input: Box<dyn Read> = if cli.input == "-" {
+        Box::new(stdin())
+    } else {
+        Box::new(File::open(cli.input)?)
+    };
 
-    let tree = filetree::Tree::from(input_csv);
+    let sized_file_vec =
+        import::read_csv(input, &cli.path_column, &cli.size_column, cli.is_du_output)?;
+
+    let tree = filetree::Tree::from(sized_file_vec);
     let export: ncdu::Export = tree.into();
     let json = serde_json::to_string_pretty(&export)?;
     println!("{json}");
@@ -52,7 +55,7 @@ mod tests {
     use super::*;
 
     use goldenfile::Mint;
-    use std::io::Write;
+    use std::{io::Write, path::PathBuf};
 
     #[rstest::rstest]
     fn golden_test(#[files("testdata/*.csv")] input_file: PathBuf) {
@@ -65,7 +68,7 @@ mod tests {
             .unwrap();
 
         let input_csv =
-            import::read_csv(input_file.to_str().unwrap(), "name", "size", false).unwrap();
+            import::read_csv(File::open(input_file).unwrap(), "name", "size", false).unwrap();
 
         let tree = filetree::Tree::from(input_csv);
         let export: ncdu::Export = tree.into();
