@@ -1,0 +1,43 @@
+[
+  1,
+  2,
+  {
+    "progname": "ncdu-import",
+    "progver": "1.0",
+    "timestamp": 1699656086
+  },
+  [
+    {
+      "name": "ROOT",
+      "dsize": 0
+    },
+    [
+      {
+        "name": "d1",
+        "dsize": 0
+      },
+      {
+        "name": "f1",
+        "dsize": 1
+      },
+      {
+        "name": "f2",
+        "dsize": 1
+      }
+    ],
+    [
+      {
+        "name": "d2",
+        "dsize": 0
+      },
+      {
+        "name": "f1",
+        "dsize": 1
+      },
+      {
+        "name": "f2",
+        "dsize": 1
+      }
+    ]
+  ]
+]
