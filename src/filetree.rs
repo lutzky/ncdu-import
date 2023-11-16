@@ -8,46 +8,43 @@ pub struct SizedFile {
 /// Tree representing a file directory tree, storing minimal metadata about the files.
 ///
 /// Directories are asserted to have zero overhead size of their own.
-#[derive(Debug, PartialEq)]
-pub enum Tree {
-    /// Size of a leaf file
-    File(usize),
+#[derive(Debug, PartialEq, Default)]
+pub struct Tree {
+    /// Size of this tree element, *excluding* children
+    pub size: usize,
 
-    /// Map of entries within a directory
-    Dir(std::collections::BTreeMap<String, Tree>),
+    pub children: std::collections::BTreeMap<String, Tree>,
 }
 
 impl Tree {
     fn add(&mut self, sf: SizedFile) {
-        match self {
-            Tree::File(_) => panic!(),
-            Tree::Dir(ref mut dir) => {
-                let sp = sf.path.split_once('/');
-                match sp {
-                    Some((car, cdr)) => {
-                        if let Some(Tree::File(_)) = dir.get(car) {
-                            dir.remove(car);
-                        }
-                        dir.entry(car.to_owned())
-                            .or_insert(Tree::Dir(Default::default()))
-                            .add(SizedFile {
-                                path: cdr.to_owned(),
-                                size: sf.size,
-                            });
-                    }
-                    None => {
-                        if let Some(Tree::Dir(_)) = dir.get(&sf.path) {
-                        } else {
-                            dir.insert(sf.path.clone(), Tree::File(sf.size));
-                        };
-                    }
-                }
+        // If this directory includes children, zero out its size (`du` lists it
+        // as a sum of all child node sizes).
+        self.size = 0;
+        let sp = sf.path.split_once('/');
+        match sp {
+            Some((car, cdr)) => {
+                self.children
+                    .entry(car.to_owned())
+                    .or_insert(Default::default())
+                    .add(SizedFile {
+                        path: cdr.to_owned(),
+                        size: sf.size,
+                    });
+            }
+            None => {
+                self.children.entry(sf.path.clone()).or_insert(
+                    Tree {
+                        size: sf.size,
+                        children: Default::default(),
+                    },
+                );
             }
         }
     }
 
     pub fn from(files: Vec<SizedFile>) -> Tree {
-        let mut result: Tree = Tree::Dir(Default::default());
+        let mut result: Tree = Default::default();
         for sf in files {
             result.add(sf);
         }

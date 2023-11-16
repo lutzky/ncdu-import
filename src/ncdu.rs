@@ -12,7 +12,7 @@ use serde::Serialize;
 /// A representation of `ncdu`'s export format
 ///
 /// When serialized to JSON, this should be ingestible using `ncdu -f`.
-pub struct Export(MajorVer, MinorVer, Metadata, Vec<Entry>);
+pub struct Export(MajorVer, MinorVer, Metadata, Entry);
 
 #[derive(Serialize)]
 struct Metadata {
@@ -40,18 +40,21 @@ struct MajorVer(u16);
 struct MinorVer(u16);
 
 impl Entry {
-    fn from_tree_and_name(name: String, tree: Tree) -> Vec<Entry> {
-        match tree {
-            Tree::File(size) => vec![Entry::IB(InfoBlock { name, dsize: size })],
-            Tree::Dir(map) => {
-                let dir_header = std::iter::once(Entry::IB(InfoBlock { name, dsize: 0 }));
-                let dir_entries = map
-                    .into_iter()
-                    .flat_map(|(name, subtree)| Entry::from_tree_and_name(name, subtree));
-                let dir = dir_header.chain(dir_entries);
-                vec![Entry::Vec(dir.collect())]
-            }
+    fn from_tree_and_name(name: String, tree: Tree) -> Entry {
+        let dir_header = Entry::IB(InfoBlock {
+            name,
+            dsize: tree.size,
+        });
+        if tree.children.is_empty() {
+            return dir_header;
         }
+        let dir_header = std::iter::once(dir_header);
+        let dir_entries = tree
+            .children
+            .into_iter()
+            .map(|(name, subtree)| Entry::from_tree_and_name(name, subtree));
+        let dir = dir_header.chain(dir_entries);
+        Entry::Vec(dir.collect())
     }
 }
 
@@ -63,16 +66,6 @@ const MINOR_VER: u16 = 2;
 
 impl From<Tree> for Export {
     fn from(value: Tree) -> Self {
-        // Because we construct a `ROOT` directory at the base of the recursion,
-        // Entry::from_tree_and_name will always contain an external
-        // [Vec([...])] that we need to unwrap.
-        let Entry::Vec(entry) = Entry::from_tree_and_name("ROOT".to_owned(), value)
-            .pop()
-            .unwrap()
-        else {
-            unreachable!()
-        };
-
         Export(
             MajorVer(MAJOR_VER),
             MinorVer(MINOR_VER),
@@ -81,7 +74,7 @@ impl From<Tree> for Export {
                 progver: PROGVER,
                 timestamp: BIRTH_TIMESTAMP,
             },
-            entry,
+            Entry::from_tree_and_name("ROOT".to_owned(), value),
         )
     }
 }
