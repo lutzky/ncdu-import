@@ -14,8 +14,11 @@
 
 [package]
 name = "ncdu-import"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/lutzky/ncdu-import"
+description = "Utility for importing CSV files into a format readable by ncdu"
 
 [dependencies]
 clap = { version = "4.4.8", features = ["derive"] }
