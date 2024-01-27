@@ -23,6 +23,7 @@ use std::{
 };
 
 #[derive(Parser)]
+#[command(version, about)]
 struct Cli {
     /// Input CSV file (- for standard input)
     input: String,
