@@ -49,6 +49,8 @@ struct Cli {
 use eyre::Result;
 
 fn main() -> Result<()> {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
+
     let cli = Cli::parse();
 
     let input: Box<dyn Read> = if cli.input == "-" {

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use log::warn;
+
 /// Struct representing a file and its size
 #[derive(Debug, Clone)]
 pub struct SizedFile {
@@ -35,6 +37,12 @@ impl Tree {
         // If this directory includes children, zero out its size (`du` lists it
         // as a sum of all child node sizes).
         self.size = 0;
+        if sf.path.ends_with('/') {
+            // This occurs sometimes in Google Cloud; specifically for the
+            // inventory reports directory.
+            warn!("Ignoring {sf:?} as it ends with '/'");
+            return
+        }
         let sp = sf.path.split_once('/');
         match sp {
             Some((car, cdr)) => {

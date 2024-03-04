@@ -23,8 +23,10 @@ description = "Utility for importing CSV files into a format readable by ncdu"
 [dependencies]
 clap = { version = "4.4.8", features = ["derive"] }
 csv = "1.3.0"
+env_logger = "0.11.2"
 eyre = "0.6.8"
 goldenfile = "1.6.0"
+log = "0.4.21"
 pretty_assertions = "1.4.0"
 rstest = "0.18.2"
 serde = { version = "1.0.192", features = ["std", "derive"] }
