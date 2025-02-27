@@ -55,7 +55,8 @@ impl Tree {
                     });
             }
             None => {
-                self.children.entry(sf.path.clone()).or_insert(
+                let mut sf = sf;
+                self.children.entry(std::mem::take(&mut sf.path)).or_insert(
                     Tree {
                         size: sf.size,
                         children: Default::default(),
